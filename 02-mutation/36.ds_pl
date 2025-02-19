@@ -1,0 +1,64 @@
+#!/usr/bin/perl
+use MdmDiscoveryScript;
+use DSScript;
+
+# Returns document only if ApplyToWindow condition is true on the client
+my $document = DiscoveryScript::LastActiveDocument(MdmModelType, True);
+
+if ($document) {
+	$document->Insert({"Path" => "complex.mol2", "FormatType" => "mol2-merge-properties"});
+} else {
+	$document = DiscoveryScript::Open({"Path" => "../Input/complex.dsv", "LoadAllObjects" => False});
+	$document->Insert({"Path" => "complex.mol2", "FormatType" => "mol2-merge-properties"});
+}
+$document->UpdateViews();
+
+DSScript::invoke_action("ActionShowInTable");
+use MdmDiscoveryScript;
+use DSScript;
+
+my $hashargs = { message => "<strong>Calculate Mutation Energy (Binding)</strong><BR>complex
+Lowest Energy Mutation: A:PHE3>PRO.A:ARG6>LEU
+Mutation Energy =   -5.15 kcal/mol",
+ details => "",
+ error => "",
+ ignore => "Protocol MessageBox: Calculate Mutation Energy (Binding)" };
+use MdmCommands;
+MdmCommands::DSReportMessageBox($hashargs);
+use MdmDiscoveryScript;
+use DSScript;
+use DiscoveryStudioScript;
+use ChartDiscoveryScript;
+#my $document = DiscoveryScript::Open({"Path" => "complex.mol2", "LoadAllObjects" => False});
+
+$document->DeselectAll();
+
+my $selress = "822
+825";
+my $energyProp = "";
+
+my @selectedRes = split /\s+/, $selress;
+
+
+my $molecule = $document->Molecules->Item(0);
+my $residues = $molecule->Residues;
+    
+      foreach my $res (@selectedRes) {
+      if($res > 0 ) {
+      my $iires = int($res) - 1;
+      my $selres = $residues->Item($iires);
+      $selres->Select();
+	  }
+      }
+
+my $SelectedResidues = $document->SelectedObjects;
+my $group = $molecule->CreateGroup( "Mutated Residues", $SelectedResidues );
+$document->UpdateViews();
+my $document1 = DiscoveryScript::Open({"Path" => "MutationEnergy.csv"});
+ my $barplot = Chart::Document::CreateBarPlot( { MdmDocument => $document1, DataTableTabName => 'Data table #1', XAxisProperty => 'Mutation', 
+ YAxisProperties => 'Mutation Energy', CategoryProperty => '', FromSelection => False } ); 
+$barplot->PlotAxisLabel(Chart::leftAxis) = "Mutation Energy [kcal/mol]";
+$barplot->PlotAxisLabel(Chart::bottomAxis) = "Mutation";
+$barplot->UpdateViews();
+$document->DeselectAll();   
+$document1->Close();   
